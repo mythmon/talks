@@ -569,10 +569,11 @@
       }
 
       function slideFromLoc() {
-        const slideNum = parseInt(document.location.hash.slice(1));
-        if (!isNaN(slideNum)) {
-          goToSlide(slideNum);
+        let slideNum = parseInt(document.location.hash.slice(1));
+        if (isNaN(slideNum)) {
+          slideNum = 0;
         }
+        goToSlide(slideNum);
       }
 
       window.onpopstate = slideFromLoc;
