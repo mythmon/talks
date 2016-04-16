@@ -1,0 +1,139 @@
+.hljs {
+  background: #f8f8f8;
+  padding: 0;
+}
+
+body {
+  background: #f8f8f8;
+  color: #4d4d4c;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+  font-family: 'DejaVu Sans', sans;
+  font-size: 4vh;
+  font-size: 4vh;
+  font-weight: 100;
+}
+
+section {
+  position: absolute;
+  left: 0;
+  right: 0;
+  display: none;
+  width: 100vw;
+  margin: 0;
+  padding: 5vh 4vw;
+  box-sizing: border-box;
+
+  /* top aligned */
+  top: 0;
+  bottom: 0;
+  height: 100vh;
+}
+
+section.title {
+  /* centered */
+  top: 50vh;
+  transform-origin: center;
+  transform: translate(0, -45%) scale(1.5);
+  height: auto;
+}
+
+section.current {
+  display: block;
+}
+
+blockquote {
+  display: none;
+}
+
+blockquote.not-note {
+  display: block;
+  font-size: 1.5em;
+  font-family: serif;
+  border-left: 0.75vw solid #cca;
+  padding: 1vh 2vw 3vh;
+  margin: 0 20vw 0 15vw;
+  background-color: #ffd;
+  box-shadow: 0.5vmin 0.25vmin 1vmin rgba(0, 0, 0, 0.5);
+}
+
+blockquote.not-note cite {
+  display: block;
+  text-align: right;
+}
+
+blockquote.not-note cite:before {
+  content: "—";
+}
+
+h1 {
+  width: 100%;
+  text-align: center;
+  font-size: 7vh;
+  margin: 5vh 0 7vh;
+}
+
+h2 {
+  width: 100%;
+  text-align: center;
+  font-size: 5vh;
+  margin: 1vh 0 7vh;
+}
+
+h3 {
+  width: 100%;
+  text-align: center;
+  font-size: 3.5vh;
+  margin: 1vh 0 7vh;
+}
+
+h1 + h2 {
+  margin-top: -5vh;
+}
+
+p {
+  margin: 6vh auto;
+}
+
+code {
+  font-family: 'Fira Code', mono;
+}
+
+code.compiler {
+  margin-top: 10vh;
+  font-family: mono;
+  font-size: 0.9em;
+  font-style: italic;
+  color: #080;
+}
+
+img {
+  max-width: 50vw;
+  max-height: 50vh;
+  margin: auto;
+  display: block;
+}
+
+table {
+  margin: 0 auto;
+}
+
+table tr td,
+table tr th {
+  padding: 0.4vh 2vw;
+  text-align: left;
+}
+
+ul.big {
+  font-size: 7vh;
+  margin-left: 20vw;
+}
+
+ul.big > li {
+  margin-top: 5vh;
+}
+
+table {
+  font-size: 1.3em;
+}
