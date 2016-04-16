@@ -1,0 +1,599 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>HLL</title>
+    <link rel="stylesheet" href="styles/tomorrow.css">
+    <style>
+      .hljs {
+        background: #f8f8f8;
+        padding: 0;
+      }
+
+      body {
+        background: #f8f8f8;
+        color: #4d4d4c;
+        margin: 0;
+        padding: 0;
+        overflow-x: hidden;
+        font-family: 'DejaVu Sans', sans;
+        font-size: 4vh;
+        font-size: 4vh;
+        font-weight: 100;
+      }
+
+      section {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        display: none;
+        width: 100vw;
+        height: 100vh;
+        margin: 0;
+        padding: 0 4vw;
+        box-sizing: border-box;
+      }
+
+      h1 {
+        width: 100%;
+        text-align: center;
+        font-size: 7vh;
+        margin: 5vh 0 7vh;
+      }
+
+      h2 {
+        width: 100%;
+        text-align: center;
+        font-size: 5vh;
+        margin: 1vh 0 7vh;
+      }
+
+      h1 + h2 {
+        margin-top: -5vh;
+      }
+
+      p {
+        margin: 6vh auto;
+      }
+
+      code {
+        font-family: 'Fira Code', mono;
+      }
+
+      img {
+        max-width: 50vw;
+        max-height: 50vh;
+        margin: auto;
+        display: block;
+      }
+
+      table {
+        margin: 0 auto;
+      }
+
+      table tr td,
+      table tr th {
+        padding: 0.4vh 2vw;
+        text-align: left;
+      }
+
+      ul.big {
+        font-size: 7vh;
+        margin-left: 20vw;
+      }
+
+      ul.big > li {
+        margin-top: 5vh;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrapper">
+      <section>
+        <h1>Cardinality of very large multisets</h1>
+        <h2>The problem:</h2>
+        <p>Given a very large stream of items, count the number of <em>unique</em> elements.</p>
+      </section>
+
+      <section>
+        <h1>Example</h1>
+        <p>
+          Stream: <code>apple, apple, banana, apple, orange, grape, orange</code>
+        </p>
+
+        <p>
+          Unique elements: <code>apple, banana, orange, grape</code>
+        <p>
+
+        <p>
+          Number of unique elements: <code>4</code>
+        </p>
+      </section>
+
+      <section>
+        <h1>Test harness</h1>
+        <pre><code>
+          fn count&lt;I>(stream: Iterator&lt;I>) -> u64 {
+              let counter = Counter::new();
+
+              for item in stream {
+                  counter.observe(item);
+              }
+
+              counter.cardinality()
+          }
+        </code></pre>
+      </section>
+
+      <section>
+        <h1>Test harness (cont.)</h1>
+        <pre><code>
+          trait UniqueCounter&lt;I> {
+              fn observe(&amp;mut self, i: I);
+              fn cardinality(&amp;self) -> u64;
+          }
+        </code></pre>
+      </section>
+
+      <section>
+        <h1>Attempt #1: HashSet</h1>
+        <pre><code>
+          pub struct HashSetCounter&lt;I: Hash + Ord> {
+              entries: BTreeSet&lt;I>,
+          }
+
+          impl&lt;I: Hash + Ord> UniqueCounter&lt;I> for HashSetCounter&lt;T> {
+              fn add(&amp;mut self, item: I) {
+                  self.entries.insert(item);
+              }
+
+              fn cardinality(&amp;self) -> u64 {
+                  self.entries.len() as u64
+              }
+          }
+        </code></pre>
+      </section>
+
+      <section>
+        <h1>HashSetCounter works, but...</h1>
+      </section>
+
+      <section>
+        <h1>HashSetCounter works, but...</h1>
+        <p>It has to store every single item.<p>
+        <p>It uses way too much memory.</p>
+        <p>
+          Specifically, it uses gigabytes of memory, depending on the
+          size of the items stored.
+        </p>
+      </section>
+
+      <section>
+        <h1>Can we do better?</h1>
+      </section>
+
+      <section>
+        <h1>Can we do better?</h1>
+        <p>Yes, but not if we have to be exact</p>
+      </section>
+
+      <section>
+        <h1>Aside: batteries</h1>
+        <pre><code>
+          fn hash&lt;T, H=SipHasher>(v: T) -> usize
+              where T: Hash,
+                    H: Hasher + Default,
+          {
+              let mut hasher = H::default();
+              v.hash(&amp;mut hasher);
+              hasher.finish() as usize
+          }
+
+          let h = hash::&lt;I>(item);
+        </code></pre>
+      </section>
+
+      <section>
+        <h1>Idea #1: Don't store the items</h1>
+        <pre><code>
+          pub struct BitSetCounter&lt;I: Hash> {
+              entries: Vec&lt;bool>,
+              count: u64,
+          }
+        </code></pre>
+      </section>
+
+      <section>
+        <pre><code>
+          impl&lt;I: Hash> UniqueCounter&lt;I> for BitSetCounter&lt;T> {
+              fn add(&amp;mut self, item: I) {
+                  let h = hash::&lt;I>(item);
+                  let i = (h % self.entries.size());
+
+                  if not self.entries[i] {
+                      self.count += 1;
+                      self.entries[i] = true;
+                  }
+              }
+
+              fn cardinality(&amp;self) -> u64 {
+                  self.count
+              }
+          }
+        </code></pre>
+      </section>
+
+      <section>
+        <h1>Better?</h1>
+        <p>Sort of</p>
+        <p>Hash collisions limit the accuracy and practical maximum cardinality</p>
+        <p>
+          With a table size of one billion bits (128 MB), after counting 10000 items
+          the probability of a collision is about 99%, effectively stopping any
+          counting.
+        </p>
+      </section>
+
+      <section>
+        <h1>Idea #2: Multiple hash functions</h1>
+        <h2>aka Bloom Filters</h2>
+        <p><em>Struct remains the same as <code>BitSetCounter</code></em></p>
+        <pre><code>
+          pub struct BloomCounter&lt;I: Hash> {
+              entries: Vec&lt;bool>,
+              count: u64,
+          }
+        </code></pre>
+      </section>
+
+      <section>
+        <pre><code>
+          impl&lt;I: Hash> UniqueCounter&lt;I> for BitSetCounter&lt;T> {
+              fn add(&amp;mut self, item: I) {
+                  let h1 = hash1::&lt;I>(item);
+                  let h2 = hash2::&lt;I>(item);
+                  let i1 = (h1 % self.entries.size());
+                  let i2 = (h2 % self.entries.size());
+
+                  if not self.entries[i1] &amp;&amp; not self.entries[i2] {
+                      self.count += 1;
+                      self.entries[i1] = true;
+                      self.entries[i2] = true;
+                  }
+              }
+
+              fn cardinality(&amp;self) -> u64 {
+                self.count
+              }
+          }
+        </code></pre>
+      </section>
+
+      <section>
+        <h1>Better!</h1>
+        <p>
+          Probability of hash collisions drops exponentially with the
+          number of hashes.
+        <p>
+
+        <p>
+          Unfortunately the birthday paradox's collision rate drops much
+          slower, so this only extends the lifetime of the counter by a
+          small factor.
+        <p>
+      </section>
+
+      <section>
+        <h1>Getting to HyperLogLog: Probability</h1>
+        <h2>
+          Consider a 100-sided die.
+        </h2>
+        <img src="http://1.bp.blogspot.com/-P4GvN49xnuA/U0SR_4p3gHI/AAAAAAAAAgI/guE3YrkMVc0/s1600/1_D100_Standard_Dice.jpg">
+      </section>
+
+      <section>
+        <h1>Dice math</h1>
+        <p>
+          The probability of rolling a given number (say, 100) is 0.01.
+        </p>
+        <p>
+          If I rolled the hundred sided die <code>N</code> times
+          and rolled 100 once, how many times did I roll the die?
+        </p>
+      </section>
+
+      <section>
+        <h1>Dice math (cont.)</h1>
+        <p>
+          Since P=0.01, the expected value of N is 1/P = 100.
+        </p>
+        <p>
+          Since I got a 100 on the die, which is pretty unlikely, I probably
+          rolled the die a lot, close to 100 times.
+        </p>
+        <p>
+          Since I only rolled 100 <em>once</em>, I probably didn't roll many
+          more than 100 times, otherwise I might have gotten two.
+        </p>
+      </section>
+
+      <section>
+        <h1>
+          So we can count with probabilities!
+        </h1>
+        <p>
+          <em>
+            Given a stream of independent events, if a chosen event with
+            probability <code>P</code> has occured once, the stream is, on
+            average, <code>1/P</code> items long.
+          </em>
+        </p>
+      </section>
+
+      <section>
+        <h1>Tuning the improbability engine</h1>
+        <p>First: We need multiple chosen events that are increasingly unlikely</p>
+        <p>Given a hash, <code>h</code>, represented as a string of bits <code>{0, 1}</code></p>
+        <table>
+          <tr>
+            <th>Event</th>
+            <th>Probability</th>
+            <th>Count<th>
+          </tr>
+          <tr>
+            <td><code>h[0..1] == "1"</code></td>
+            <td><sup>1</sup>/<sub>2</sub></td>
+            <td>2</td>
+          </tr>
+          <tr>
+            <td><code>h[0..2] == "01"</code></td>
+            <td><sup>1</sup>/<sub>4</sub></td>
+            <td>4</td>
+          </tr>
+          <tr>
+            <td><code>h[0..3] == "001"</code></td>
+            <td><sup>1</sup>/<sub>8</sub></td>
+            <td>8</td>
+          </tr>
+          <tr>
+            <td><code>h[0..4] == "0001"</code></td>
+            <td><sup>1</sup>/<sub>16</sub></td>
+            <td>16</td>
+          </tr>
+          <tr>
+            <td><code>h[0..n+1] ~= /0{n}1/</code></td>
+            <td><sup>1</sup>/<sub>2<sup>n</sup></sub></td>
+            <td>2<sup>n</sup></td>
+          </tr>
+        </table>
+      </section>
+
+      <section>
+        <h2>Next: Keep track of the most improbable event so far</h2>
+        <pre><code>
+          struct MiniLogLog {
+              max_leading_zeroes: u8,
+          }
+
+          impl&lt;I: Hash> UniqueCounter&lt;I> for MiniLogLog {
+              fn add(&amp;mut self, item: I) {
+                  let h = hash1::&lt;I>(item);
+                  let zeroes = leading_zeroes(h);
+                  self.max_leading_zeroes =
+                      max(self.max_leading_zeroes, zeroes);
+              }
+
+              fn cardinality(&amp;self) -> u64 {...}
+          }
+        </code></pre>
+      </section>
+
+      <section>
+        <h2>...and calculate cardinality based on probability.</h2>
+        <pre><code>
+          struct MiniLogLog {
+              max_leading_zeroes: u8,
+          }
+
+          impl&lt;I: Hash> UniqueCounter&lt;I> for MiniLogLog {
+              fn add(&amp;mut self, item: I) {...}
+
+              fn cardinality(&amp;self) -> u64 {
+                  2.0f64.powi(self.max_leading_zeroes as i32) as u64
+              }
+          }
+        </code></pre>
+      </section>
+
+      <section>
+        <h1>Analyzing memory usage</h1>
+        <p>
+          With a 64 bit hash function, the most unlikely event that can occure
+          is a hash of all zeroes. That's <sup>1</sup>/<sub>2<sup>64</sup></sub>,
+          which is a truly might bogglingly unlikely event.
+        </p>
+        <p>
+          This corresponds to being able to count to dizzying heights of 2<sup>64</sup>.
+        </p>
+        <p>
+          All with only about a <code>u8</code> of storage!
+        </p>
+        <p>
+          What's the catch?
+        </p>
+      </section>
+
+      <section>
+        <h1>The catch: it's terrible</h1>
+        <p>
+          MiniLogLog is extremely sensitive to outliers.
+        </p>
+        <p>
+          Consider a stream containing exactly one item which happens to
+          have a hash that starts with 20 zeroes. MiniLogLog will estimate
+          that stream to contain about a million items. Not good.
+        </p>
+        <p>
+          Since it only keeps track of one hash, it is really easy to
+          trick MiniLogLog into <em>over</em>counting.
+        </p>
+      </section>
+
+      <section>
+        <h1>The solution: MOAR hashes!</h1>
+        <p>
+          <code>BloomCounter</code> improved on the <code>BitSetCounter</code>
+          by using more hashes.
+        </p>
+        <p>
+          Just as the chance of a full collision went down exponentially as the
+          number of hashes was increased, the chance of tricking MiniLogLog goes
+          down exponentially as the number of hashes is increased.
+        </p>
+      </section>
+
+      <section>
+        <h1>Hashing is slow<sub><small>ish</small></sub></h1>
+        <p>
+          Just make one hash, but treat it as two parts:
+        </p>
+        <p>
+          The first six bits are the index, and the last 58 bits are the events to measure.
+        </p>
+      </section>
+
+      <section>
+        <pre><code>
+          struct HyperLogLog {
+              registers: Vec&lt;u8>,
+              prefix_size: u8,
+              // registers.size() is 2^prefix_size
+          }
+
+          impl&lt;I: Hash> UniqueCounter&lt;I> for MiniLogLog {
+              fn add(&amp;mut self, item: I) {
+                  let h = hash1::&lt;I>(item);
+                  let index = h[0..6];
+                  let event = h[6..64];
+                  let zeroes = leading_zeroes(event);
+                  self.registers[index] = max(self.registers[index], zeroes);
+              }
+
+              fn cardinality(&amp;self) -> u64 {...}
+          }
+        </code></pre>
+      </section>
+
+      <section>
+        <h2>now cardinality is more complicated</h2>
+        <p>
+          Take estimates from all registers, and then take the harmonic mean.
+        </p>
+        <pre><code>
+          fn cardinality(&amp;self) -> u64 {
+              // m is the number of registers
+              let m = 2f64.powi(self.prefix_size);
+              let estimates = self.registers.iter()
+                  .map(|r| 2f64.powi(r as i32))
+                  .map(|e| e * m); // Each register is 1/m of the stream
+
+              // harmonic mean of estimates
+              let inverse_mean = estimates.iter()
+                .map(|e| e.recip())
+                .fold(0f64, |a, b| a + b);
+
+              inverse_mean.recip()
+          }
+        </code></pre>
+      </section>
+
+      <section>
+        <h1>The rest</h1>
+        <ul class="big">
+          <li>&alpha; correction factor</li>
+          <li>Small range correction</li>
+          <li>Large range correction</li>
+        </ul>
+      </section>
+    </div>
+
+    <script>
+      function deckNext() {
+        let currentSlideNum = parseInt(document.location.hash.slice(1));
+        if (isNaN(currentSlideNum)) {
+          currentSlideNum = -1;
+        }
+        goToSlide(currentSlideNum + 1);
+      }
+
+      function deckPrev() {
+        let currentSlideNum = parseInt(document.location.hash.slice(1));
+        if (isNaN(currentSlideNum)) {
+          currentSlideNum = 0;
+        }
+        goToSlide(currentSlideNum - 1);
+      }
+
+      document.addEventListener('keydown', function(e) {
+        if (e.which === 34 || // page down
+          (e.which === 32 && !e.shiftKey) || // space without shift
+          (e.which === 39) // right
+        ) {
+          deckNext();
+        }
+
+        if (e.which == 33 || // page up
+          (e.which == 32 && e.shiftKey) || // space + shift
+          (e.which == 37) // left
+        ) {
+          deckPrev();
+        }
+      });
+
+      function goToSlide(n) {
+        const slides = document.querySelectorAll('section');
+        while (n < 0) {
+          n += slides.length + 1;
+        }
+        n = n % (slides.length + 1);
+        const chosenSlide = slides[n];
+        for (let s of slides) {
+          s.style.display = 'none';
+        }
+        if (chosenSlide) {
+          chosenSlide.style.display = 'block';
+        }
+        window.history.pushState({}, null, `#${n}`);
+      }
+
+      function slideFromLoc() {
+        const slideNum = parseInt(document.location.hash.slice(1));
+        if (!isNaN(slideNum)) {
+          goToSlide(slideNum);
+        }
+      }
+
+      window.onpopstate = slideFromLoc;
+      slideFromLoc();
+
+      const codes = document.querySelectorAll('code');
+      for (let code of codes) {
+        var lines = code.textContent.split('\n');
+        while (lines[0] === '') {
+          lines.shift()
+        }
+
+        var match = /^[\s\t]+/.exec(lines[0]);
+        if (match) {
+          var indentation = match[0];
+          lines = lines.map(line => line.replace(indentation, ''));
+          code.textContent = lines.join('\n').trim();
+        }
+      }
+    </script>
+    <script src="highlight.pack.js"></script>
+    <script>hljs.initHighlightingOnLoad();</script>
+  </body>
+</html>
