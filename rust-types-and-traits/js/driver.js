@@ -1,3 +1,11 @@
+function currentSlide() {
+  let currentSlideNum = parseInt(document.location.hash.slice(1));
+  if (isNaN(currentSlideNum)) {
+    currentSlideNum = 0;
+  }
+  return currentSlideNum;
+}
+
 function goToSlide(n) {
   const slides = document.querySelectorAll('section');
   while (n < 0) {

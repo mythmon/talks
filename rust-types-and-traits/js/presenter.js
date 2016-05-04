@@ -1,21 +1,13 @@
 let slidesWindow = null;
 
 function deckNext() {
-  let currentSlideNum = parseInt(document.location.hash.slice(1));
-  if (isNaN(currentSlideNum)) {
-    currentSlideNum = -1;
-  }
-  let newSlide = currentSlideNum + 1;
+  let newSlide = currentSlide() + 1;
   goToSlide(newSlide);
   notifySlides(newSlide);
 }
 
 function deckPrev() {
-  let currentSlideNum = parseInt(document.location.hash.slice(1));
-  if (isNaN(currentSlideNum)) {
-    currentSlideNum = 0;
-  }
-  let newSlide = currentSlideNum - 1;
+  let newSlide = currentSlide() - 1;
   goToSlide(newSlide);
   notifySlides(newSlide);
 }
@@ -31,7 +23,9 @@ function notifySlides(slideNum) {
 function openViewer() {
   if (slidesWindow === null || slidesWindow.closed) {
     console.log('opening slides');
-    slidesWindow = window.open('index.html', 'Slides', '');
+    const url = `index.html#${currentSlide()}`;
+    const opts = 'toolbar=0,location=0,menubar=0,width=640,height=480';
+    slidesWindow = window.open(url, '_blank', opts);
     window.focus();
   }
 }
@@ -54,6 +48,12 @@ function openViewer() {
 
     if (e.key === 'p') {
       openViewer();
+    }
+  });
+
+  window.addEventListener('beforeunload', event => {
+    if (slidesWindow) {
+      slidesWindow.close();
     }
   });
 })();
