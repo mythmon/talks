@@ -31,16 +31,12 @@ section {
   height: 100vh;
 }
 
-section.title {
-  /* centered */
-  top: 50vh;
-  transform-origin: center;
-  transform: translate(0, -45%) scale(1.5);
-  height: auto;
-}
-
 section.current {
   display: block;
+}
+
+section.title {
+  padding-top: 25vh;
 }
 
 blockquote {
@@ -74,6 +70,10 @@ h1 {
   margin: 5vh 0 7vh;
 }
 
+.title h1 {
+  font-size: 11vh;
+}
+
 h2 {
   width: 100%;
   text-align: center;
@@ -81,11 +81,19 @@ h2 {
   margin: 1vh 0 7vh;
 }
 
+.title h2 {
+  font-size: 8vh;
+}
+
 h3 {
   width: 100%;
   text-align: center;
   font-size: 3.5vh;
   margin: 1vh 0 7vh;
+}
+
+.title h3 {
+  font-size: 5vh;
 }
 
 h1 + h2 {

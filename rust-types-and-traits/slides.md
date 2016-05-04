@@ -166,25 +166,13 @@ add(2.5, 4.5);
 
 # The `Add` Trait
 
-```rust
-/// The `Add` trait is used to specify the functionality of `+`.
-/// [snip]
-#[lang = "add"]
-#[stable(feature = "rust1", since = "1.0.0")]
-pub trait Add<RHS=Self> {
-    /// The resulting type after applying the `+` operator
-    #[stable(feature = "rust1", since = "1.0.0")]
-    type Output;
+This is a simplified version of the built-in `Add` trait.
 
-    /// The method for the `+` operator
-    #[stable(feature = "rust1", since = "1.0.0")]
-    fn add(self, rhs: RHS) -> Self::Output;
+```rust
+pub trait Add {
+    fn add(self, rhs: Self) -> Self;
 }
 ```
-
-> This is the actual definition of Add from the stdlib. It is busy,
-> hard to read. Take time to step through it line by line.
-> XXX: Maybe simplify this instead of being true to the stdlib?
 
 ---
 
@@ -612,10 +600,16 @@ println!("{:?}", c); // "Complex { real: 3, imag: 4 }"
 
 ---
 
+<meta class="title"/>
+
 # Questions?
 
 ---
 
+<meta class="title"/>
+
 # End
 
 ## @mythmon
+
+---
