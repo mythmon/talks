@@ -4,4 +4,5 @@ An explanation of the Type system and Trait system in Rust.
 
 ## History
 
-* Given at Beaver Bar Camp 16 (2016-04-16)
+* PDX Rust (2016-04-16)
+* Beaver Bar Camp 16 (2016-04-16)
