@@ -85,11 +85,11 @@ for i in 0..count {
 # A toy
 
 ```rust
-fn add(a: i32, b: i32) -> i32 {
-    a + b
+fn toy(a: i32, b: i32) -> i32 {
+    a + a + b
 }
 
-add(3, 4); // 7
+toy(3, 4); // 10
 ```
 
 > Here is a simple little function for us to play with. It simply takes
@@ -100,7 +100,7 @@ add(3, 4); // 7
 # Breaking our toys
 
 ```rust
-add(2.5, 4.5);
+toy(2.5, 4.5);
 ```
 
 ```compiler
@@ -109,14 +109,14 @@ add(2.5, 4.5);
     found `_`
 (expected i32,
     found floating-point variable) [E0308]
-<anon>:1     add(2.5, 4.5);
+<anon>:1     toy(2.5, 4.5);
                  ^~~
 ```
 
 > What if we try and call it with floats? Predictably, it breaks, since
-> we said above that `add` only works on `i32`s.
+> we said above that `toy` only works on `i32`s.
 
-> One way to fix this would be to make another version of `add` that
+> One way to fix this would be to make another version of `toy` that
 > works specifically on `f32` or `f64`. But that would be boring.
 
 ---
@@ -124,15 +124,12 @@ add(2.5, 4.5);
 # Generics
 
 ```rust
-fn add<T>(a: T, b: T) -> T {
-    a + b
+fn toy<T>(a: T, b: T) -> T {
+    a + a + b
 }
 
-add(2.5, 4.5);
+toy(2.5, 4.5);
 ```
-
-> Luckily, Rust gives a simple solution. We can implement this function
-> for a generic type, which we call `T`. Unfortunately, that doesn't work.
 
 ```compiler
 <anon>:2:5: 2:6 error: binary operation `+` cannot be applied
@@ -142,6 +139,9 @@ add(2.5, 4.5);
 <anon>:2:5: 2:6 note: an implementation of `std::ops::Add`
                 might be missing for `T`
 ```
+
+> Luckily, Rust gives a simple solution. We can implement this function
+> for a generic type, which we call `T`. Unfortunately, that doesn't work.
 
 ---
 
@@ -159,7 +159,7 @@ add(2.5, 4.5);
 > rules on the types that work in a function, and all this happens at
 > compile time.
 
-> In our add example, we need to constrain `T` to only types that allow
+> In our toy example, we need to constrain `T` to only types that allow
 > addition. For that, we have the `Add` trait.
 
 ---
@@ -179,14 +179,14 @@ pub trait Add {
 # A generic toy
 
 ```rust
-fn add<T: Add>(a: T, b: T) -> T::Output {
-    a + b
+fn toy<T: Add>(a: T, b: T) -> T {
+    a + a + b
 }
 
-add(2.5, 4.5); // 7.0
+toy(2.5, 4.5); // 9.5
 ```
 
-> Adding type bounds to `T` makes `add` work for many more types.
+> Adding type bounds to `T` makes `toy` work for many more types.
 
 ---
 
@@ -215,16 +215,11 @@ impl Complex {
     fn new(real: i32, imag: i32) -> Complex {
         Complex { real: real, imag: imag }
     }
-
-    fn add(self, rhs: Complex) -> Complex {
-        Complex::new(self.real + other.real,
-                     self.imag + other.imag)
-    }
 }
 ```
 
 > Any type can have methods implemented for it. Here we implement a
-> **constructor** and a method named `add`.
+> **constructor** and a method named `toy`.
 
 ---
 
@@ -232,9 +227,7 @@ impl Complex {
 
 ```rust
 impl Complex {
-    fn new(real: i32, imag: i32) -> Complex {
-        Complex { real: real, imag: imag }
-    }
+    // ...
 
     fn zero() -> Complex {
         Complex { real: 0, imag: 0 }
@@ -248,39 +241,10 @@ impl Complex {
 
 ---
 
-# Generics!
-
-```rust
-let c1 = Complex::new(1, 2);
-let c2 = Complex::new(3, 4);
-
-add(c1, c2);
-```
-
-```compiler
-<anon>:15:5: 15:8 error: the trait `core::ops::Add` is not
-                  implemented for the type `Complex` [E0277]
-```
-
-> Although we have an `add` method defined for our type, it isn't the
-> *right* add method, so Rust won't use it. This might seem annoying,
-> but it is really very useful. All traits are opt-in, which makes code
-> easier to read, reason about, and statically analyze.
-
----
-
 # Implementing traits
 
 ```rust
-impl Complex {
-    fn new(real: i32, imag: i32) -> Complex {
-        Complex { real: real, imag: imag }
-    }
-
-}
-
 impl Add for Complex {
-    type Output = Complex;
     fn add(self, other: Complex) -> Complex {
         Complex::new(self.real + other.real,
                      self.imag + other.imag)
@@ -299,8 +263,7 @@ impl Add for Complex {
 let c1 = Complex::new(1, 2);
 let c2 = Complex::new(3, 4);
 
-add(c1, c2);  // 4+6i
-c1 + c2; // also 4+6i
+toy(c1, c2);  // 5+8i
 ```
 
 > Now that we have implemented Add, we can use Complex numbers in our
@@ -382,15 +345,16 @@ big_enough(&s); // false
 use std::ops::Add;
 
 impl Add for i32 {
-    type Output = String;
-
-    fn add(self, rhs: i32) -> String {
-        "Fish".to_string()
+    fn add(self, rhs: i32) -> i32 {
+        self * 2
     }
 }
 ```
 
-> This doesn't work
+> This doesn't work for two reasons
+>
+> * `Add` is already implemented for `i32`
+> * We own neither `Add` nor `i32`
 
 ---
 
@@ -408,7 +372,7 @@ note: conflicting implementation in crate `core`
 ```
 
 > There are complex rules dictating exactly when you can implement a trait for
-> the type. A simply version is that you either have to own the trait or the
+> the type. A simple version is that you either have to own the trait or the
 > the type.
 
 ---
@@ -425,26 +389,28 @@ note: conflicting implementation in crate `core`
 # `Option`
 
 ```rust
+// Simplified definition of Option
 enum Option<T> {
     None,
     Some(value: T),
 }
 
-fn navigate(start: &Location, end: &Location) -> Option<Path> {
+fn get_directions(start: &Location, end: &Location) -> Option<Path> {
     ...
 }
 ```
 
-> Option represents either a value or nothing. In other languages, you
-> might see a method that returns a value or `null`. Rust codifies this
-> into the type system. Here we have a function that gets a navigation
-> path between two places, or nothing if no path could be found.
+> * Either a value, or nothing
+> * Similar to other langauages that return someting or `null`
+> * Rust codifies this in the type system
+> * This example gets the path between two places, or nothing
 
 ---
 
 # `Result`
 
 ```rust
+// Simplified definition of Result
 enum Result<T, E> {
     Ok(value: T),
     Err(error: E),
@@ -455,9 +421,10 @@ fn ask_user_for_name() -> Result<String, IoError> {
 }
 ```
 
-> Result represents either a value or an error, and is usually used when IO is
-> involved. The difference between this and Option is that None is a valid
-> result, not an error case. Err(e) is a problem that needs dealt with.
+> * Represents either a value or an error
+> * Usually used with IO
+> * With `Option` is `None` is a valid result
+> * With `Result`, a lack of a value is an problem
 
 ---
 
@@ -473,9 +440,9 @@ for n in 0..10 {
 println!("{}", squares[4]); // 16
 ```
 
-> Vecs are the generic way to represent an ordered collection of things.
-> They are like arrays except they don't have a fixed size. They are
-> generally very useful.
+> * No implementation here
+> * Generic, ordered collection
+> * Use them!
 
 ---
 
@@ -491,9 +458,8 @@ println!("{}", offices[&999]); // panic!
 println!("{:?}", offices.get(&999)); // None
 ```
 
-> Hashmaps are the generic way to represent a key/value mapping. They
-> are a bit pickier than Hashmaps in other languages, which is a result
-> of type safety.
+> * Generic key/value mappping
+> * Pickier than other languages, due to type safety
 
 ---
 
@@ -529,8 +495,8 @@ fn mandelbrot_iters<T>(c: Into<Complex>) -> u32 {
     ...
 }
 
-mandelbrot_iters((1, 1));
 mandelbrot_iters(Complex::new(1, 1));
+mandelbrot_iters((1, 1));
 ```
 
 > They are often used on the paramaters to functions that might take a
@@ -548,7 +514,7 @@ fn read<T>() -> T
 {
     let mut buffer = String::new();
     io::stdin().read_line(&mut buffer).unwrap();
-    s.trim.parse().unwrap();
+    buffer.trim().parse().unwrap()
 }
 
 let i: i32 = read();
@@ -567,8 +533,8 @@ println!("{}", v); // v must be Display
 println!("{:?}", v); // v must be Debug
 ```
 
-> Display and Debug are the traits used to format objects into strings.
-> They are the opposite of FromStr
+> * traits used to format objects into strings
+> * Opposite of FromStr
 
 ---
 
@@ -576,11 +542,26 @@ println!("{:?}", v); // v must be Debug
 
 ```rust
 pub trait Debug {
-    fn fmt(&self, &mut Formatter) -> Result<(), Error>;
+    fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error>;
 }
 
 pub trait Display {
-    fn fmt(&self, &mut Formatter) -> Result<(), Error>;
+    fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error>;
+}
+```
+
+> * `Debug` and `Display` both have one method, `fmt`, which takes a `Formatter`
+> * Use methods to write data onto the formatter
+
+---
+
+# The `Display` trait
+
+```rust
+impl Display for Complex {
+    fn fmt(&self, fmt: &mut Formatter) -> Result<(), Error> {
+        try!(write!(fmt, "{}+{}i", self.real, self.imag))
+    }
 }
 ```
 
@@ -597,6 +578,8 @@ struct Complex {
 let c = Complex { real: 3, imag: 4 };
 println!("{:?}", c); // "Complex { real: 3, imag: 4 }"
 ```
+
+> * Debug can be automatically derived
 
 ---
 
